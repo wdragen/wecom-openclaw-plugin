@@ -1,8 +1,6 @@
 import {
   DEFAULT_ACCOUNT_ID,
   formatPairingApproveHint,
-  resolveOpenProviderRuntimeGroupPolicy,
-  resolveDefaultGroupPolicy,
   type ChannelPlugin,
   type ChannelStatusIssue,
   type OpenClawConfig,
@@ -39,7 +37,7 @@ async function sendWeComMessage({
 
   // 获取 WSClient 实例
   const wsClient = getWeComWebSocket(resolvedAccountId);
-  if (!wsClient || !wsClient.isConnected) {
+  if (!wsClient) {
     throw new Error(`WSClient not connected for account ${resolvedAccountId}`);
   }
 
@@ -80,8 +78,11 @@ export const wecomPlugin: ChannelPlugin<ResolvedWeComAccount> = {
     idLabel: "wecomUserId",
     normalizeAllowEntry: (entry) => entry.replace(new RegExp(`^(${CHANNEL_ID}|user):`, "i"), "").trim(),
     notifyApproval: async ({ cfg, id }) => {
-      // 企业微信机器人不支持主动发送消息，只能在用户下次发消息时通知
-      // 这里暂时不实现，因为需要有 reqId 才能回复
+      // sendWeComMessage({
+      //   to: id,
+      //   content: " pairing approved",
+      //   accountId: cfg.accountId,
+      // });
       console.log(`[WeCom] Pairing approved for user: ${id}`);
     },
   },
@@ -171,7 +172,7 @@ export const wecomPlugin: ChannelPlugin<ResolvedWeComAccount> = {
         normalizeEntry: (raw) => raw.replace(new RegExp(`^${CHANNEL_ID}:`, "i"), "").trim(),
       };
     },
-    collectWarnings: ({account}) => {
+    collectWarnings: ({account, cfg}) => {
       const warnings: string[] = [];
 
       // DM 策略警告
@@ -188,12 +189,13 @@ export const wecomPlugin: ChannelPlugin<ResolvedWeComAccount> = {
       }
 
       // 群组策略警告
-      const defaultGroupPolicy = resolveDefaultGroupPolicy({} as OpenClawConfig);
-      const { groupPolicy } = resolveOpenProviderRuntimeGroupPolicy({
-        providerConfigPresent: true,
-        groupPolicy: account.config.groupPolicy,
-        defaultGroupPolicy,
-      });
+      const defaultGroupPolicy = cfg.channels?.defaults?.groupPolicy;
+      const groupPolicy = account.config.groupPolicy ?? defaultGroupPolicy ?? "open"
+      // const { groupPolicy } = resolveOpenProviderRuntimeGroupPolicy({
+      //   providerConfigPresent: true,
+      //   groupPolicy: account.config.groupPolicy,
+      //   defaultGroupPolicy,
+      // });
       if (groupPolicy === "open") {
         warnings.push(
           `- 企业微信群组：groupPolicy="open" 允许所有群组中的成员触发。设置 channels.${CHANNEL_ID}.groupPolicy="allowlist" + channels.${CHANNEL_ID}.groupAllowFrom 来限制群组。`,

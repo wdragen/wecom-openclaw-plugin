@@ -5,11 +5,6 @@
  */
 
 import type { OpenClawConfig, RuntimeEnv } from "openclaw/plugin-sdk";
-import {
-  resolveOpenProviderRuntimeGroupPolicy,
-  resolveDefaultGroupPolicy,
-  warnMissingProviderGroupPolicyFallbackOnce,
-} from "openclaw/plugin-sdk";
 import { CHANNEL_ID } from "./const.js";
 import type { ResolvedWeComAccount, WeComConfig, WeComGroupConfig } from "./utils.js";
 
@@ -133,19 +128,20 @@ export function checkGroupPolicy(params: {
   const { chatId, senderId, account, config, runtime } = params;
   const wecomConfig = (config.channels?.[CHANNEL_ID] ?? {}) as WeComConfig;
 
-  const defaultGroupPolicy = resolveDefaultGroupPolicy(config);
-  const { groupPolicy, providerMissingFallbackApplied } = resolveOpenProviderRuntimeGroupPolicy({
-    providerConfigPresent: config.channels?.[CHANNEL_ID] !== undefined,
-    groupPolicy: wecomConfig.groupPolicy,
-    defaultGroupPolicy,
-  });
+  const defaultGroupPolicy = config.channels?.[CHANNEL_ID]?.groupPolicy;
+  const groupPolicy = account.config.groupPolicy ?? defaultGroupPolicy ?? "open"
+  // const { groupPolicy, providerMissingFallbackApplied } = resolveOpenProviderRuntimeGroupPolicy({
+  //   providerConfigPresent: config.channels?.[CHANNEL_ID] !== undefined,
+  //   groupPolicy: wecomConfig.groupPolicy,
+  //   defaultGroupPolicy,
+  // });
 
-  warnMissingProviderGroupPolicyFallbackOnce({
-    providerMissingFallbackApplied,
-    providerKey: CHANNEL_ID,
-    accountId: account.accountId,
-    log: (msg) => runtime.log?.(msg),
-  });
+  // warnMissingProviderGroupPolicyFallbackOnce({
+  //   providerMissingFallbackApplied,
+  //   providerKey: CHANNEL_ID,
+  //   accountId: account.accountId,
+  //   log: (msg) => runtime.log?.(msg),
+  // });
 
   const groupAllowFrom = wecomConfig.groupAllowFrom ?? [];
   const groupAllowed = isWeComGroupAllowed({

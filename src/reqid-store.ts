@@ -216,7 +216,7 @@ export function createPersistentReqIdStore(
       });
     } catch (error) {
       // 磁盘写入失败不影响内存使用，降级到纯内存模式
-      console.error(`[WeCom] reqid-store: flush to disk failed: ${String(error)}`);
+      // console.error(`[WeCom] reqid-store: flush to disk failed: ${String(error)}`);
     }
   }
 
